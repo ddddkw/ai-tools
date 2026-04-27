@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP,
     CONSTRAINT users_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 

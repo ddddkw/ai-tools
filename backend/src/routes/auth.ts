@@ -8,6 +8,10 @@ const router = Router();
 router.post('/register/email', (req, res, next) => authController.registerEmail(req, res, next));
 router.post('/login/email', (req, res, next) => authController.loginEmail(req, res, next));
 
+// Password reset
+router.post('/forgot-password', (req, res, next) => authController.forgotPassword(req, res, next));
+router.post('/reset-password', (req, res, next) => authController.resetPassword(req, res, next));
+
 // Phone auth
 router.post('/register/phone', (req, res, next) => authController.registerPhone(req, res, next));
 router.post('/login/phone/request-code', (req, res, next) => authController.requestPhoneCode(req, res, next));
