@@ -222,9 +222,9 @@ export class AuthService {
       fields.push(`username = $${idx++}`);
       values.push(updates.username);
     }
-    if (updates.avatarUrl) {
+    if (updates.avatar_url) {
       fields.push(`avatar_url = $${idx++}`);
-      values.push(updates.avatarUrl);
+      values.push(updates.avatar_url);
     }
     if (updates.phone) {
       fields.push(`phone = $${idx++}`);

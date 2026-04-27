@@ -274,7 +274,7 @@ export class AuthController {
       const user = await authService.updateUser(userId, {
         email: updates.email,
         username: updates.username,
-        avatarUrl: updates.avatarUrl,
+        avatar_url: updates.avatarUrl,
         phone: updates.phone,
       });
 
