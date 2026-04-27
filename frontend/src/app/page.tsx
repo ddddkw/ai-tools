@@ -1,18 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { LoginForm } from "../components/LoginForm";
-
-type View = "home" | "login" | "register" | "dashboard";
-
-type User = {
-  id?: string;
-  email?: string;
-  name?: string;
-  created_at?: string;
-};
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://47.100.186.167:3000";
 
 const theme = {
   bg: "#08090a",
@@ -25,18 +15,14 @@ const theme = {
   surface: "rgba(255,255,255,0.03)",
 };
 
-const navStyle = {
-  position: "sticky" as const,
-  top: 0,
-  zIndex: 10,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  height: 64,
-  padding: "0 32px",
-  background: "rgba(8,9,10,0.92)",
-  backdropFilter: "blur(16px)",
-  borderBottom: "1px solid rgba(255,255,255,0.05)",
+const buttonBase = {
+  border: 0,
+  borderRadius: 4,
+  height: 38,
+  padding: "0 16px",
+  fontSize: 14,
+  fontWeight: 510,
+  cursor: "pointer",
 };
 
 const logoStyle = {
@@ -49,24 +35,16 @@ const logoStyle = {
   letterSpacing: "-0.2px",
 };
 
-const buttonBase = {
-  border: 0,
-  borderRadius: 4,
-  height: 38,
-  padding: "0 16px",
-  fontSize: 14,
-  fontWeight: 510,
-  cursor: "pointer",
-};
+type View = "home" | "login" | "register" | "dashboard";
 
-export default function Home() {
+function HomeContent() {
+  const { user, isLoading, isAuthenticated, login, register, logout } = useAuth();
   const [view, setView] = useState<View>("home");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -74,82 +52,39 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (isAuthenticated && user) {
+      setView("dashboard");
+    }
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
     if (view === "login") {
       setError("");
     }
   }, [view]);
 
-  const doLogin = async (loginEmail = email, loginPassword = password) => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login/email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || "登录失败，请检查邮箱和密码");
-      }
-
-      const token = data?.token || data?.access_token;
-      const nextUser = data?.user || data;
-
-      if (token) {
-        localStorage.setItem("token", token);
-      }
-
-      setUser(nextUser);
-      setView("dashboard");
-      return nextUser;
-    } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : "登录失败，请稍后重试";
-      setError(message);
-      throw loginError;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
     setError("");
+    setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register/email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || "注册失败，请稍后重试");
-      }
-
-      await doLogin(email, password);
-    } catch (registerError) {
-      const message = registerError instanceof Error ? registerError.message : "注册失败，请稍后重试";
-      setError(message);
+      await register(email, password, name);
+      setView("dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "注册失败，请稍后重试");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     setView("home");
   };
 
   const renderNav = () => (
-    <nav style={navStyle}>
+    <nav style={{ position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, padding: "0 32px", background: "rgba(8,9,10,0.92)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
       <button
         type="button"
         onClick={() => setView("home")}
@@ -196,7 +131,7 @@ export default function Home() {
     </nav>
   );
 
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return null;
   }
 
@@ -204,8 +139,6 @@ export default function Home() {
     return (
       <main style={{ minHeight: "100vh", background: theme.bg }}>
         <LoginForm
-          error={error}
-          onSuccess={({ email, password }) => doLogin(email, password)}
           onSwitchToRegister={() => setView("register")}
           onBackToHome={() => setView("home")}
         />
@@ -251,11 +184,7 @@ export default function Home() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-            {[
-              ["项目总数", "128"],
-              ["本周调用量", "42.8K"],
-              ["最近部署", "2 分钟前"],
-            ].map(([label, value]) => (
+            {[["项目总数", "128"], ["本周调用量", "42.8K"], ["最近部署", "2 分钟前"]].map(([label, value]) => (
               <div key={label} style={{ padding: 16, background: theme.surface, border: `1px solid ${theme.borderStrong}`, borderRadius: 8 }}>
                 <div style={{ color: theme.muted, fontSize: 12 }}>{label}</div>
                 <div style={{ marginTop: 8, color: theme.text, fontSize: 18, fontWeight: 590 }}>{value}</div>
@@ -301,6 +230,8 @@ export default function Home() {
                     border: `1px solid ${theme.borderStrong}`,
                     borderRadius: 6,
                     outline: "none",
+                    fontFamily: "inherit",
+                    fontSize: 15,
                   }}
                 />
               </label>
@@ -341,15 +272,15 @@ export default function Home() {
         {renderNav()}
         <section style={{ maxWidth: 860, margin: "0 auto", padding: "88px 24px" }}>
           <h1 style={{ margin: 0, fontSize: 44, fontWeight: 510, letterSpacing: "-1px" }}>
-            欢迎回来，{user.name || user.email}
+            欢迎回来，{user.username || user.email}
           </h1>
           <p style={{ marginTop: 14, color: theme.muted, fontSize: 16 }}>你的 AI 开发工作台已准备就绪。</p>
 
           <div style={{ marginTop: 32, padding: 24, background: theme.surface, border: `1px solid ${theme.borderStrong}`, borderRadius: 8 }}>
             {[
               ["邮箱", user.email || "-"],
-              ["ID", user.id || "-"],
-              ["创建时间", user.created_at || "-"],
+              ["用户名", user.username || "-"],
+              ["创建时间", new Date(user.created_at).toLocaleDateString("zh-CN")],
             ].map(([label, value]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", borderBottom: label === "创建时间" ? 0 : `1px solid ${theme.border}` }}>
                 <span style={{ color: theme.muted }}>{label}</span>
@@ -462,5 +393,13 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <HomeContent />
+    </AuthProvider>
   );
 }
