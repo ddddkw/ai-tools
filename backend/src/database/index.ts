@@ -49,6 +49,46 @@ export const initDatabase = async () => {
       )
     `);
 
+    // Projects table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        github_repo VARCHAR(500),
+        github_branch VARCHAR(100) DEFAULT 'main',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Requirements table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS requirements (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        priority VARCHAR(20) DEFAULT 'medium',
+        tags TEXT[] DEFAULT '{}',
+        status VARCHAR(20) DEFAULT 'draft',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Analysis results table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS analysis_results (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        requirement_id UUID REFERENCES requirements(id) ON DELETE CASCADE,
+        analysis JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('Database initialized successfully');
   } finally {
     client.release();

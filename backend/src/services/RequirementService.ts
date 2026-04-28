@@ -77,6 +77,21 @@ export class RequirementService {
     return result.rows[0] ? this.mapToRequirement(result.rows[0]) : null;
   }
 
+  async findByIdWithProject(id: string): Promise<(Requirement & { project_user_id: string }) | null> {
+    const result = await pool.query(
+      `SELECT r.*, p.user_id as project_user_id
+       FROM requirements r
+       JOIN projects p ON r.project_id = p.id
+       WHERE r.id = $1`,
+      [id]
+    );
+    if (!result.rows[0]) return null;
+    return {
+      ...this.mapToRequirement(result.rows[0]),
+      project_user_id: result.rows[0].project_user_id,
+    };
+  }
+
   async update(id: string, data: UpdateRequirementDTO): Promise<Requirement | null> {
     const fields: string[] = [];
     const values: any[] = [];

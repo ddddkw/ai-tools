@@ -42,7 +42,7 @@ export class AnalysisService {
     );
 
     // Call OpenAI API for analysis
-    const analysisData = await this.callOpenAIAnalysis(requirement.title, requirement.content);
+    const analysisData = await this.callOpenAIAnalysis(requirementId, requirement.title, requirement.content);
 
     // Save analysis result
     await pool.query(
@@ -59,18 +59,11 @@ export class AnalysisService {
     return analysisData;
   }
 
-  private async callOpenAIAnalysis(title: string, content: string): Promise<AnalysisData> {
+  private async callOpenAIAnalysis(requirementId: string, title: string, content: string): Promise<AnalysisData> {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-    const prompt = `You are an expert software requirement analyst. Analyze the following requirement and provide a structured analysis.
-
-Requirement Title: ${title}
-Requirement Content:
-${content}
-
-Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
-{"summary":"2-3 sentence summary of the requirement","suggestedTasks":["task 1","task 2","task 3"],"estimatedComplexity":"low|medium|high","suggestedPriority":"low|medium|high"}`;
+    const prompt = `You are an expert software requirement analyst. Analyze the following requirement and provide a structured analysis.\n\nRequirement Title: ${title}\nRequirement Content:\n${content}\n\nRespond ONLY with valid JSON in this exact format (no markdown, no explanation):\n{"summary":"2-3 sentence summary of the requirement","suggestedTasks":["task 1","task 2","task 3"],"estimatedComplexity":"low|medium|high","suggestedPriority":"low|medium|high"}`;
 
     try {
       const response = await fetch(OPENAI_API_URL, {
@@ -97,10 +90,8 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
       // Try to parse JSON from response
       let analysisData: AnalysisData;
       try {
-        // Try direct parse first
         analysisData = JSON.parse(text);
       } catch {
-        // Try extracting JSON from text
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           analysisData = JSON.parse(jsonMatch[0]);

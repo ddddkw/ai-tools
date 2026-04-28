@@ -91,3 +91,23 @@ export interface PaginatedResult<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface AnalysisResult {
+  id: string;
+  requirement_id: string;
+  analysis: AnalysisData;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateAnalysisResultDTO {
+  requirementId: string;
+  data: AnalysisData;
+}
+
+export interface AnalysisData {
+  summary: string;
+  suggestedTasks: string[];
+  estimatedComplexity: 'low' | 'medium' | 'high';
+  suggestedPriority: 'low' | 'medium' | 'high';
+}
