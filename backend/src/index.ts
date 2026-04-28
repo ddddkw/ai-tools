@@ -1,37 +1,105 @@
-import express from 'express';
-import cors from 'cors';
-import { config } from './config';
-import { initDatabase } from './database';
-import authRoutes from './routes/auth';
-import userRoutes from './routes/user';
-import { errorHandler } from './middleware/errorHandler';
+export interface User {
+  id: string;
+  phone?: string;
+  email?: string;
+  githubId?: string;
+  passwordHash?: string;
+  githubToken?: string;
+  figmaToken?: string;
+  aiProvider: 'openai' | 'claude';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const app = express();
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+export interface TokenPayload {
+  userId: string;
+  type: 'access' | 'refresh';
+}
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+export interface GithubProfile {
+  id: string;
+  username: string;
+  email?: string;
+  avatarUrl?: string;
+}
 
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  github_repo: string | null;
+  github_branch: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
-app.use(errorHandler);
+export interface Requirement {
+  id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  priority: 'low' | 'medium' | 'high';
+  tags: string[];
+  status: 'draft' | 'analyzing' | 'analyzed' | 'approved';
+  created_at: Date;
+  updated_at: Date;
+}
 
-const start = async () => {
-  try {
-    await initDatabase();
-    app.listen(config.port, '0.0.0.0', () => {
-      console.log(`Server running on http://0.0.0.0:${config.port}`);
-      console.log(`API docs: http://47.100.186.167:${config.port}/health`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+export interface CreateProjectDTO {
+  name: string;
+  description?: string;
+  github_repo?: string;
+  github_branch?: string;
+}
 
-start();
+export interface UpdateProjectDTO {
+  name?: string;
+  description?: string;
+  github_repo?: string;
+  github_branch?: string;
+}
+
+export interface CreateRequirementDTO {
+  title: string;
+  content: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
+}
+
+export interface UpdateRequirementDTO {
+  title?: string;
+  content?: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
+}
+
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AnalysisResult {
+  id: string;
+  requirement_id: string;
+  analysis: {
+    summary: string;
+    suggestedTasks: string[];
+    estimatedComplexity: 'low' | 'medium' | 'high';
+    suggestedPriority: 'low' | 'medium' | 'high';
+  };
+  created_at: Date;
+}

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { LoginForm } from "../components/LoginForm";
+import ProjectList from "../components/projects/ProjectList";
 
 type View = "home" | "login" | "register" | "dashboard";
+type DashboardTab = "overview" | "projects";
 
 type User = {
   id?: string;
@@ -61,6 +63,7 @@ const buttonBase = {
 
 export default function Home() {
   const [view, setView] = useState<View>("home");
+  const [dashboardTab, setDashboardTab] = useState<DashboardTab>("overview");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -71,6 +74,22 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    // 恢复登录状态
+    const savedToken = localStorage.getItem("token");
+    const savedUser = localStorage.getItem("user");
+    const savedView = localStorage.getItem("view");
+    if (savedToken && savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
+        // 优先用保存的 view，否则默认 dashboard
+        setView(savedView === "dashboard" ? "dashboard" : "home");
+      } catch {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("view");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -96,15 +115,18 @@ export default function Home() {
         throw new Error(data?.message || "登录失败，请检查邮箱和密码");
       }
 
-      const token = data?.token || data?.access_token;
+      const token = data?.tokens?.accessToken || data?.token || data?.access_token;
       const nextUser = data?.user || data;
 
       if (token) {
         localStorage.setItem("token", token);
       }
+      if (nextUser) {
+        localStorage.setItem("user", JSON.stringify(nextUser));
+      }
 
       setUser(nextUser);
-      setView("dashboard");
+      localStorage.setItem("view", "dashboard"); setView("dashboard");
       return nextUser;
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : "登录失败，请稍后重试";
@@ -144,6 +166,8 @@ export default function Home() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("view");
     setUser(null);
     setView("home");
   };
@@ -339,33 +363,58 @@ export default function Home() {
         }}
       >
         {renderNav()}
-        <section style={{ maxWidth: 860, margin: "0 auto", padding: "88px 24px" }}>
-          <h1 style={{ margin: 0, fontSize: 44, fontWeight: 510, letterSpacing: "-1px" }}>
-            欢迎回来，{user.name || user.email}
-          </h1>
-          <p style={{ marginTop: 14, color: theme.muted, fontSize: 16 }}>你的 AI 开发工作台已准备就绪。</p>
 
-          <div style={{ marginTop: 32, padding: 24, background: theme.surface, border: `1px solid ${theme.borderStrong}`, borderRadius: 8 }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 24, background: theme.surface, borderRadius: 8, padding: 4, width: "fit-content" }}>
             {[
-              ["邮箱", user.email || "-"],
-              ["ID", user.id || "-"],
-              ["创建时间", user.created_at || "-"],
-            ].map(([label, value]) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", borderBottom: label === "创建时间" ? 0 : `1px solid ${theme.border}` }}>
-                <span style={{ color: theme.muted }}>{label}</span>
-                <span>{value}</span>
-              </div>
+              { key: "overview", label: "概览" },
+              { key: "projects", label: "项目" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setDashboardTab(tab.key as DashboardTab)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 6,
+                  border: 0,
+                  background: dashboardTab === tab.key ? theme.primary : "transparent",
+                  color: dashboardTab === tab.key ? "#fff" : theme.muted,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            style={{ ...buttonBase, marginTop: 24, color: theme.muted, background: theme.surface, border: `1px solid ${theme.borderStrong}` }}
-          >
-            退出登录
-          </button>
-        </section>
+          {dashboardTab === "overview" && (
+            <section style={{ maxWidth: 860 }}>
+              <h1 style={{ margin: 0, fontSize: 44, fontWeight: 510, letterSpacing: "-1px" }}>
+                欢迎回来，{user.name || user.email}
+              </h1>
+              <p style={{ marginTop: 14, color: theme.muted, fontSize: 16 }}>你的 AI 开发工作台已准备就绪。</p>
+
+              <div style={{ marginTop: 32, padding: 24, background: theme.surface, border: `1px solid ${theme.borderStrong}`, borderRadius: 8 }}>
+                {[
+                  ["邮箱", user.email || "-"],
+                  ["ID", user.id || "-"],
+                  ["创建时间", user.created_at || "-"],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", borderBottom: label === "创建时间" ? 0 : `1px solid ${theme.border}` }}>
+                    <span style={{ color: theme.muted }}>{label}</span>
+                    <span>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {dashboardTab === "projects" && (
+            <ProjectList token={typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""} />
+          )}
+        </div>
       </main>
     );
   }

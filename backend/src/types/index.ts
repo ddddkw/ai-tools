@@ -27,3 +27,67 @@ export interface GithubProfile {
   email?: string;
   avatarUrl?: string;
 }
+
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  github_repo: string | null;
+  github_branch: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Requirement {
+  id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  priority: 'low' | 'medium' | 'high';
+  tags: string[];
+  status: 'draft' | 'analyzing' | 'analyzed' | 'approved';
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateProjectDTO {
+  name: string;
+  description?: string;
+  github_repo?: string;
+  github_branch?: string;
+}
+
+export interface UpdateProjectDTO {
+  name?: string;
+  description?: string;
+  github_repo?: string;
+  github_branch?: string;
+}
+
+export interface CreateRequirementDTO {
+  title: string;
+  content: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
+}
+
+export interface UpdateRequirementDTO {
+  title?: string;
+  content?: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
+}
+
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
