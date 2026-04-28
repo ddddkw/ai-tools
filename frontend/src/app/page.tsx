@@ -74,21 +74,39 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    // 恢复登录状态
+    // 恢复登录状态（需要验证 token 有效性）
     const savedToken = localStorage.getItem("token");
+    if (!savedToken) return;
+
     const savedUser = localStorage.getItem("user");
-    const savedView = localStorage.getItem("view");
-    if (savedToken && savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        setUser(parsed);
-        // 优先用保存的 view，否则默认 dashboard
-        setView(savedView === "dashboard" ? "dashboard" : "home");
-      } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("view");
-      }
+    if (!savedUser) return;
+
+    try {
+      const parsed = JSON.parse(savedUser);
+      // 先验证 token 有效性，再恢复登录状态
+      fetch(`${API_BASE_URL}/api/auth/me`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${savedToken}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Invalid token");
+          return res.json();
+        })
+        .then((data) => {
+          setUser(data.user || data);
+          setView("dashboard");
+        })
+        .catch(() => {
+          // token 无效，清除登录状态
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("view");
+          setView("home");
+        });
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("view");
     }
   }, []);
 
