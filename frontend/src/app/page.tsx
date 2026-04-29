@@ -84,7 +84,7 @@ export default function Home() {
     try {
       const parsed = JSON.parse(savedUser);
       // 先验证 token 有效性，再恢复登录状态
-      fetch(`${API_BASE_URL}/api/auth/me`, {
+      fetch(`${API_BASE_URL}auth/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${savedToken}` },
       })
@@ -121,7 +121,7 @@ export default function Home() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login/email`, {
+      const response = await fetch(`${API_BASE_URL}auth/login/email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
@@ -161,7 +161,7 @@ export default function Home() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register/email`, {
+      const response = await fetch(`${API_BASE_URL}auth/register/email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, name }),
